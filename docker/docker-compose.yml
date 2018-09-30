@@ -1,0 +1,101 @@
+version: '3'
+services:
+
+  backend:
+    container_name: 'backend'
+    restart: always
+    build:
+      context: ../
+      dockerfile: ./docker/backend/Dockerfile
+    command: ['sh', '../init/wait-for-db.sh', 'postgres-db', 'gunicorn', 'backend:app', '-w', '2', '-b', ':8000']
+    expose:
+      - '8000'
+    links:
+      - postgres-db:postgres-db
+      - redis-revoked-store:redis-revoked-store
+    environment:
+      - ENV_TYPE=PROD
+      - SECRET_KEY=${SECRET_KEY}
+      - REDIS_URL=${REDIS_URL}
+      - LOG_TO_STDOUT=${LOG_TO_STDOUT}
+      - DATABASE_URL=postgresql+psycopg2://${DB_USER}:${DB_PASS}@${DB_SERVICE}:5432/${DB_NAME}
+    volumes:
+      - ../backend/:/app/backend
+    depends_on:
+      - redis-revoked-store
+      - postgres-db
+  
+  app-testing:
+    container_name: "app-testing"
+    restart: on-failure
+    build:
+      context: ../
+      dockerfile: ./docker/backend/Dockerfile
+    links:
+      - postgres-db:postgres-db
+      - redis-revoked-store:redis-revoked-store
+    environment:
+      - FLASK_APP=${FLASK_APP}
+      - ENV_TYPE=TESTING
+      - SECRET_KEY=${SECRET_KEY}
+      - REDIS_URL=${REDIS_URL}
+      - LOG_TO_STDOUT=${LOG_TO_STDOUT}
+      - DATABASE_URL=postgresql+psycopg2://${DB_USER}:${DB_PASS}@${DB_SERVICE}:5432/${DB_NAME}
+      - DATABASE_URL_TESTING=postgresql+psycopg2://${DB_USER_TESTING}:${DB_PASS_TESTING}@${DB_SERVICE_TESTING}:5432/${DB_NAME_TESTING}
+    volumes:
+      - ../backend/:/app/backend
+    working_dir: /app/backend
+    command: tail -f /dev/null
+    depends_on:
+      - redis-revoked-store
+      - postgres-db
+
+  app-migration:
+    container_name: "app-migration"
+    restart: on-failure
+    build:
+      context: ../
+      dockerfile: ./docker/backend/Dockerfile
+    links:
+      - postgres-db:postgres-db
+      - redis-revoked-store:redis-revoked-store
+    environment:
+      - FLASK_APP=${FLASK_APP}
+      - ENV_TYPE=PROD
+      - SECRET_KEY=${SECRET_KEY}
+      - REDIS_URL=${REDIS_URL}
+      - LOG_TO_STDOUT=${LOG_TO_STDOUT}
+      - DATABASE_URL=postgresql+psycopg2://${DB_USER}:${DB_PASS}@${DB_SERVICE}:5432/${DB_NAME}
+      - DATABASE_URL_TESTING=postgresql+psycopg2://${DB_USER_TESTING}:${DB_PASS_TESTING}@${DB_SERVICE_TESTING}:5432/${DB_NAME_TESTING}
+    volumes:
+      - ../backend/:/app/backend
+    working_dir: /app/backend
+    command: flask db upgrade
+    depends_on:
+      - redis-revoked-store
+      - postgres-db
+
+  redis-revoked-store:
+    container_name: 'redis-revoked-store'
+    restart: always
+    image: redis:latest
+    ports:
+      - 6379:6379
+
+  postgres-db:
+    container_name: 'postgres-db'
+    restart: always
+    image: postgres:latest
+    volumes:
+      - ./postgres-db/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d/
+      - db:/var/lib/postgresql
+    environment:
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+      - DB_NAME_TESTING=${DB_NAME_TESTING}
+      - DB_USER_TESTING=${DB_USER_TESTING}
+      - DB_PASS_TESTING=${DB_PASS_TESTING}
+
+volumes:
+  db:

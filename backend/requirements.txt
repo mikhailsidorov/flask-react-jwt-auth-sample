@@ -1,0 +1,13 @@
+Flask==1.0.2
+flask-allows==0.7.0
+Flask-HTTPAuth==3.2.4
+Flask-Login==0.4.1
+Flask-Mail==0.9.1
+Flask-Migrate==2.2.1
+Flask-SQLAlchemy==2.3.2
+Flask-RESTful==0.3.6
+gunicorn==19.9.0
+marshmallow==3.0.0b13
+PyJWT==1.6.4
+redis==2.10.6
+psycopg2>=2.7.4
