@@ -12,4 +12,4 @@ class BaseConfig(object):
     LOG_TO_STDOUT = os.environ.get('LOG_TO_STDOUT')
 
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=10)
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
+    JWT_SESSION_EXPIRES = timedelta(days=30)

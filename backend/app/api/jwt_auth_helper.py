@@ -11,8 +11,8 @@ from app import db
 from app.models import Session
 
 
-def _is_rt_expired(payload, now=None):
-    expiration_date = datetime.utcfromtimestamp(payload['rt_expiration'])
+def _is_session_expired(payload, now=None):
+    expiration_date = datetime.utcfromtimestamp(payload['session_exp'])
     return expiration_date <= (datetime.utcnow() if not now else now)
 
 
@@ -41,17 +41,17 @@ def revoke_token(token, expires_delta):
     current_app.redis.set(token, 'true', expires_delta)
 
 
-def revoke_refresh_token(token):
+def delete_session(token):
     session = Session.query.filter(Session.token == token).first()
     db.session.delete(session)
     db.session.commit()
-    expires_delta = current_app.config.get('JWT_REFRESH_TOKEN_EXPIRES', 0)
+    expires_delta = current_app.config.get('JWT_SESSION_EXPIRES', 0)
     revoke_token(token, expires_delta)
 
 
-def revoke_all_refresh_tokens(user_id):
+def delete_all_sessions(user_id):
     sessions = Session.query.filter(Session.user_id == user_id)
-    expires_delta = current_app.config['JWT_REFRESH_TOKEN_EXPIRES']
+    expires_delta = current_app.config['JWT_SESSION_EXPIRES']
     for session in sessions:
         revoke_token(session.token, expires_delta)
         db.session.delete(session)
@@ -61,15 +61,16 @@ def revoke_all_refresh_tokens(user_id):
 def create_session(now=None, expires_delta=None):
     now = datetime.utcnow() if not now else now
     if not expires_delta:
-        expires_delta = current_app.config['JWT_REFRESH_TOKEN_EXPIRES']
-    rt = token_urlsafe(32)
-    rt_expiration = now + expires_delta
+        expires_delta = current_app.config['JWT_SESSION_EXPIRES']
+    token = token_urlsafe(32)
+    session_exp = now + expires_delta
     user_agent = request.headers.get('User-Agent')
     os = UserAgent(user_agent).platform
     session = Session(user_id=g.current_user_id, ip=request.remote_addr, os=os,
-                      user_agent=request.headers.get('User-Agent'), token=rt,
-                      expired_at=rt_expiration, created_at=now, updated_at=now)
-    current_app.redis.set(rt, 'false', expires_delta)
+                      user_agent=request.headers.get('User-Agent'),
+                      token=token, expired_at=session_exp, created_at=now,
+                      updated_at=now)
+    current_app.redis.set(token, 'false', expires_delta)
     db.session.add(session)
     db.session.commit()
     return session
@@ -78,8 +79,8 @@ def create_session(now=None, expires_delta=None):
 def make_payload(session):
     payload = {
         'user_id': g.current_user_id,
-        'refresh_token': session.token,
-        'rt_expiration': session.expired_at.timestamp(),
+        'session_token': session.token,
+        'session_exp': session.expired_at.timestamp(),
         'ip': session.ip,
         'os': session.os,
         'user_agent': session.user_agent
@@ -100,17 +101,17 @@ def decode_token(token):
     return jwt.decode(token, current_app.config['SECRET_KEY'], algorithms='HS256')
 
 
-def _touch_refresh_token(payload, now=datetime.utcnow()):
+def _touch_session(payload, now=datetime.utcnow()):
     try:
-        rt_expiration = now + current_app.config['JWT_REFRESH_TOKEN_EXPIRES']
+        session_exp = now + current_app.config['JWT_SESSION_EXPIRES']
         current_session = Session.query.filter(
             Session.user_id == payload['user_id'],
-            Session.token == payload['refresh_token'],
+            Session.token == payload['session_token'],
             Session.expired_at > now).one()
-        current_session.expired_at = rt_expiration
+        current_session.expired_at = session_exp
         db.session.add(current_session)
         db.session.commit()
-        return rt_expiration
+        return session_exp
     except NoResultFound:
         abort(401)
 
@@ -127,9 +128,9 @@ def jwt_required(fn):
         g.payload = payload.copy()
         g.current_user_id = g.payload['user_id']
 
-        if _is_rt_expired(payload, now):
+        if _is_session_expired(payload, now):
             abort(401)
-        if _is_token_revoked(payload['refresh_token']):
+        if _is_token_revoked(payload['session_token']):
             abort(401)
         if _is_user_agent_changed(payload):
             abort(401)
@@ -137,13 +138,13 @@ def jwt_required(fn):
             abort(401)
 
         if _is_at_expired(payload, now):
-            rt_expiration = _touch_refresh_token(payload, now=now)
-            payload['rt_expiration'] = rt_expiration.timestamp()
+            session_exp = _touch_session(payload, now=now)
+            payload['session_exp'] = session_exp.timestamp()
             g.new_access_token = create_access_token(payload)
             return fn(*args, **kwargs)
 
-        rt_expiration = _touch_refresh_token(payload, now=now)
-        payload['rt_expiration'] = rt_expiration.timestamp()
+        session_exp = _touch_session(payload, now=now)
+        payload['session_exp'] = session_exp.timestamp()
         g.new_access_token = create_access_token(payload)
         return fn(*args, **kwargs)
 

@@ -1,8 +1,6 @@
 from flask import g, request
 from flask_allows import Allows, Requirement
 
-from .errors.exceptions import UserIdFieldIsMissed
-
 
 allows = Allows(identity_loader=lambda: g.current_user_id)
 
