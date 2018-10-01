@@ -23,17 +23,17 @@ class AuthAPITestCase(unittest.TestCase):
         db.create_all()
         self.client = self.app.test_client()
 
-        self.test_password = 'test_password'
+        self.password = 'test_password'
         self.user1 = User(username='john', email='john@example.com',
-                          password=self.test_password)
+                          password=self.password)
         self.user2 = User(username='Siri', email='siri@example.com',
-                          password=self.test_password)
+                          password=self.password)
 
         db.session.add_all([self.user1, self.user2])
         db.session.commit()
 
         self.user1_BAH = make_basic_auth_headers(self.user1.username,
-                                                 self.test_password)
+                                                 self.password)
         response = self.client.post(url_for('api.auth_login'),
                                     headers=self.user1_BAH)
         self.user1_at = json.loads(response.data)['access_token']
@@ -53,31 +53,31 @@ class AuthAPITestCase(unittest.TestCase):
         payload = decode_token(data['access_token'])
 
         session = Session.query.filter_by(
-            token=payload['refresh_token']).first()
+            token=payload['session_token']).first()
         self.assertIsNotNone(session)
 
         revoke_status = current_app.redis.get(session.token)
         self.assertIsNotNone(revoke_status)
         self.assertEqual(revoke_status.decode('utf-8'), 'false')
 
-        self.assertIn('refresh_token', payload)
-        self.assertIn('rt_expiration', payload)
+        self.assertIn('session_token', payload)
+        self.assertIn('session_exp', payload)
         self.assertIn('os', payload)
         self.assertIn('user_agent', payload)
         self.assertIn('user_id', payload)
         self.assertIn('exp', payload)
         self.assertIn('ip', payload)
 
-        rt_expiration = datetime.utcfromtimestamp(payload['rt_expiration'])
-        rt_delta = rt_expiration - now
+        session_exp = datetime.utcfromtimestamp(payload['session_exp'])
+        session_delta = session_exp - now
         at_expiration = datetime.utcfromtimestamp(payload['exp'])
         at_delta = at_expiration - now
 
-        self.assertEqual(rt_delta.days,
-                         Config.JWT_REFRESH_TOKEN_EXPIRES.days)
+        self.assertEqual(session_delta.days,
+                         Config.JWT_SESSION_EXPIRES.days)
         self.assertGreater(Config.JWT_ACCESS_TOKEN_EXPIRES, at_delta)
-        self.assertEqual(session.token, payload['refresh_token'])
-        self.assertEqual(session.expired_at, rt_expiration)
+        self.assertEqual(session.token, payload['session_token'])
+        self.assertEqual(session.expired_at, session_exp)
         self.assertEqual(session.os, payload['os'])
         self.assertEqual(session.user_agent, payload['user_agent'])
         self.assertEqual(session.ip, payload['ip'])
@@ -91,9 +91,9 @@ class AuthAPITestCase(unittest.TestCase):
                                       headers=self.user1_TAH)
         payload = decode_token(self.user1_at)
         session = Session.query.filter_by(
-            token=payload['refresh_token']).first()
+            token=payload['session_token']).first()
         self.assertIsNone(session)
-        revoke_status = current_app.redis.get(payload['refresh_token'])
+        revoke_status = current_app.redis.get(payload['session_token'])
         self.assertIsNotNone(revoke_status)
         self.assertEqual(revoke_status.decode('utf-8'), 'true')
         self.assertEqual(response.status_code, 200)

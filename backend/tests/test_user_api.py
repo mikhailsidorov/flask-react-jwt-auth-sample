@@ -1,6 +1,5 @@
 import json
 import unittest
-from base64 import b64encode
 
 from flask_restful import url_for
 

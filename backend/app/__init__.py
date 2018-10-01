@@ -25,12 +25,10 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     login.init_app(app)
     mail.init_app(app)
-
     app.redis = Redis.from_url(app.config['REDIS_URL'])
 
     from app.api import bp as api_bp
     app.register_blueprint(api_bp, url_prefix='/api')
-
     stream_handler = logging.StreamHandler()
     stream_handler.setLevel(logging.INFO)
     app.logger.addHandler(stream_handler)

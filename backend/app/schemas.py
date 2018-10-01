@@ -1,7 +1,5 @@
-from marshmallow import fields, Schema, validates, RAISE
+from marshmallow import fields, Schema, RAISE
 from marshmallow.validate import Length
-
-from app.models import User
 
 
 class UserSchema(Schema):

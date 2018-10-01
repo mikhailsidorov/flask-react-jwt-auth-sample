@@ -7,8 +7,8 @@ from werkzeug.exceptions import Unauthorized
 
 from app.models import User
 from .jwt_auth_helper import (
-    create_access_token, jwt_required, revoke_refresh_token,
-    revoke_all_refresh_tokens, create_session, make_payload)
+    create_access_token, jwt_required, delete_session,
+    delete_all_sessions, create_session, make_payload)
 
 
 basic_auth = HTTPBasicAuth()
@@ -50,7 +50,7 @@ class Logout(Resource):
     }
 
     def delete(self):
-        revoke_refresh_token(g.payload['refresh_token'])
+        delete_session(g.payload['session_token'])
         return 200
 
 
@@ -60,5 +60,5 @@ class LogoutAll(Resource):
     }
 
     def delete(self, user_id):
-        revoke_all_refresh_tokens(user_id)
+        delete_all_sessions(user_id)
         return 200

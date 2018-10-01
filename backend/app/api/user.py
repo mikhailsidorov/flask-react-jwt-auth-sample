@@ -1,6 +1,4 @@
-from datetime import datetime
-
-from flask import jsonify, request, url_for, abort, g
+from flask import jsonify, request, url_for, abort
 from flask_restful import Resource
 from marshmallow.exceptions import ValidationError
 
@@ -8,8 +6,7 @@ from app import db
 from app.models import User
 from app.schemas import user_schema, users_schema
 from .errors import exceptions
-from .jwt_auth_helper import (jwt_required, create_access_token, create_session,
-                              make_payload, revoke_all_refresh_tokens)
+from .jwt_auth_helper import jwt_required, delete_all_sessions
 from .permissions import allows, CanUpdateProfile, CanDeleteProfile
 
 
@@ -37,12 +34,11 @@ class UserDetail(Resource):
             raise exceptions.EmailAddressAlreadyUsed
         user.update(**data)
         db.session.commit()
-
         return user_schema.dump(user)
 
     def delete(self, user_id):
         user = User.query.get_or_404(user_id)
-        revoke_all_refresh_tokens(user_id)
+        delete_all_sessions(user_id)
         db.session.delete(user)
         db.session.commit()
         return '', 200
