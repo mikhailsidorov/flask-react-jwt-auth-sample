@@ -1,0 +1,47 @@
+version: 2
+jobs:
+  build:
+    working_directory: ~/repo
+    docker:
+      - image: circleci/python:3.6.1
+        environment:
+          ENV_TYPE: TESTING
+          FLASK_APP: backend.py
+          SECRET_KEY: 'mysecret'
+          REDIS_URL: redis://localhost:6379/0
+          DATABASE_URL: postgresql+psycopg2://app:app@localhost:5432/app
+
+      - image: circleci/postgres:9.4
+        environment:
+          POSTGRES_USER: app
+          POSTGRES_DB: app
+          POSTGRES_PASSWORD: app
+
+      - image: circleci/redis:4.0.11-alpine
+
+
+    steps:
+      - checkout
+
+      - run:
+          name: install dependencies
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            pip install -r backend/requirements/testing.txt
+        
+      - run:
+          name: run tests
+          command: |
+            . venv/bin/activate
+            coverage run -m unittest discover backend -vf
+
+      - run:
+          name: upload coverage report
+          command: |
+            . venv/bin/activate
+            codecov
+
+
+
+          
