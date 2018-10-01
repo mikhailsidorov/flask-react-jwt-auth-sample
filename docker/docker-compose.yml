@@ -40,8 +40,7 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - REDIS_URL=${REDIS_URL}
       - LOG_TO_STDOUT=${LOG_TO_STDOUT}
-      - DATABASE_URL=postgresql+psycopg2://${DB_USER}:${DB_PASS}@${DB_SERVICE}:5432/${DB_NAME}
-      - DATABASE_URL_TESTING=postgresql+psycopg2://${DB_USER_TESTING}:${DB_PASS_TESTING}@${DB_SERVICE_TESTING}:5432/${DB_NAME_TESTING}
+      - DATABASE_URL=postgresql+psycopg2://${DB_USER_TESTING}:${DB_PASS_TESTING}@${DB_SERVICE_TESTING}:5432/${DB_NAME_TESTING}
     volumes:
       - ../backend/:/app/backend
     working_dir: /app/backend
@@ -66,7 +65,6 @@ services:
       - REDIS_URL=${REDIS_URL}
       - LOG_TO_STDOUT=${LOG_TO_STDOUT}
       - DATABASE_URL=postgresql+psycopg2://${DB_USER}:${DB_PASS}@${DB_SERVICE}:5432/${DB_NAME}
-      - DATABASE_URL_TESTING=postgresql+psycopg2://${DB_USER_TESTING}:${DB_PASS_TESTING}@${DB_SERVICE_TESTING}:5432/${DB_NAME_TESTING}
     volumes:
       - ../backend/:/app/backend
     working_dir: /app/backend
