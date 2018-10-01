@@ -13,5 +13,4 @@ omit =
     tests/*
     backend/tests/*
     backend/backend.py
-    *__init__*
     app/config/*
