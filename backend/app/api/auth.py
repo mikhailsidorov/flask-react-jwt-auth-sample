@@ -1,14 +1,10 @@
-from datetime import datetime
-
-from flask import current_app, jsonify, g
+from flask import jsonify, g
 from flask_httpauth import HTTPBasicAuth
 from flask_restful import Resource
 from werkzeug.exceptions import Unauthorized
 
 from app.models import User
-from .jwt_auth_helper import (
-    create_access_token, jwt_required, delete_session,
-    delete_all_sessions, create_session, make_payload)
+from .jwt_auth_helper import jwt_required, delete_session, delete_all_sessions, login
 
 
 basic_auth = HTTPBasicAuth()
@@ -34,12 +30,7 @@ class Login(Resource):
     }
 
     def post(self):
-        now = datetime.utcnow()
-        at_expiration = now + current_app.config['JWT_ACCESS_TOKEN_EXPIRES']
-        at = create_access_token(make_payload(create_session(now)))
-        response = jsonify({'access_token': at,
-                            'at_expiration': at_expiration.isoformat(),
-                            'user_id': g.current_user_id})
+        response = jsonify(login())
         response.status_code = 200
         return response
 

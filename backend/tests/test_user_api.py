@@ -1,5 +1,7 @@
 import json
 import unittest
+from datetime import datetime
+
 
 from flask_restful import url_for
 
@@ -18,40 +20,26 @@ class UserAPITestCase(unittest.TestCase):
         self.app = create_app(Config)
         self.app_context = self.app.test_request_context()
         self.app_context.push()
-
         db.drop_all()
-
         db.create_all()
         self.client = self.app.test_client()
         self.test_password = 'test_password'
 
-        self.user_data = {'username': 'user100',
-                          'password': self.test_password,
-                          'email': 'user100@example.com'}
+        self.user_data = {'username': 'user100', 'password': self.test_password, 'email': 'user100@example.com'}
+        self.updated_user_data = {'username': 'user100', 'email': 'user100@example.com'}
 
-        self.user1 = User(username='john', email='john@example.com',
-                          password=self.test_password)
-        self.user2 = User(username='Siri', email='siri@example.com',
-                          password=self.test_password)
-
+        self.user1 = User(username='john', email='john@example.com', password=self.test_password)
+        self.user2 = User(username='Siri', email='siri@example.com', password=self.test_password)
         db.session.add_all([self.user1, self.user2])
         db.session.commit()
 
-        self.updated_user_data = {'username': 'user100',
-                                  'email': 'user100@example.com'}
+        self.user1_BAH = make_basic_auth_headers(self.user1.username, self.test_password)
+        self.user2_BAH = make_basic_auth_headers(self.user2.username, self.test_password)
 
-        self.user1_BAH = make_basic_auth_headers(
-            self.user1.username, self.test_password)
-        self.user2_BAH = make_basic_auth_headers(
-            self.user2.username, self.test_password)
-
-        response = self.client.post(
-            url_for('api.auth_login'), headers=self.user1_BAH)
+        response = self.client.post(url_for('api.auth_login'), headers=self.user1_BAH)
         access_token = json.loads(response.data)['access_token']
         self.user1_token_auth_headers = make_token_auth_headers(access_token)
-
-        response = self.client.post(
-            url_for('api.auth_login'), headers=self.user2_BAH)
+        response = self.client.post(url_for('api.auth_login'), headers=self.user2_BAH)
         access_token = json.loads(response.data)['access_token']
         self.user2_token_auth_headers = make_token_auth_headers(access_token)
 
@@ -61,24 +49,27 @@ class UserAPITestCase(unittest.TestCase):
         self.app_context.pop()
 
     def test_create_user(self):
-        response = self.client.post(
-            url_for('api.user_list'),
-            data=json.dumps(self.user_data),
-            content_type='application/json')
+        response = self.client.post(url_for('api.user_list'), data=json.dumps(self.user_data),
+                                    content_type='application/json')
         self.assertEqual(response.status_code, 201)
-        new_user = User.query.filter_by(
-            username=self.user_data['username']).first()
-        self.assertEqual(
-            response.headers['Location'],
-            url_for('api.user_detail', user_id=new_user.id, _external=True))
+        new_user = User.query.filter_by(username=self.user_data['username']).first()
+        self.assertEqual(response.headers['Location'], url_for('api.user_detail', user_id=new_user.id, _external=True))
         data = json.loads(response.data)
-        self.assertIn('email', data)
-        self.assertIn('username', data)
-        self.assertIn('id', data)
-        self.assertEqual(data['username'], self.user_data['username'])
-        self.assertEqual(data['id'], new_user.id)
+        self.assertIn('user', data)
+        self.assertIn('token', data)
+        self.assertIn('email', data['user'])
+        self.assertIn('username', data['user'])
+        self.assertIn('id', data['user'])
+        self.assertEqual(data['user']['username'], self.user_data['username'])
+        self.assertEqual(data['user']['id'], new_user.id)
         self.assertTrue(new_user.check_password(self.user_data['password']))
         self.assertEqual(new_user.email, self.user_data['email'])
+        self.assertIn('access_token', data['token'])
+        self.assertIn('at_expiration', data['token'])
+        self.assertIn('user_id', data['token'])
+        self.assertEqual(data['token']['user_id'], new_user.id)
+        at_expiration = datetime.strptime(data['token']['at_expiration'], "%Y-%m-%dT%H:%M:%S.%fZ")
+        self.assertGreater(at_expiration, datetime.utcnow())
 
     def test_create_user_error_on_incomplete_data(self):
         for key in self.user_data.keys():

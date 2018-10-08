@@ -24,18 +24,13 @@ class AuthAPITestCase(unittest.TestCase):
         self.client = self.app.test_client()
 
         self.password = 'test_password'
-        self.user1 = User(username='john', email='john@example.com',
-                          password=self.password)
-        self.user2 = User(username='Siri', email='siri@example.com',
-                          password=self.password)
-
+        self.user1 = User(username='john', email='john@example.com', password=self.password)
+        self.user2 = User(username='Siri', email='siri@example.com', password=self.password)
         db.session.add_all([self.user1, self.user2])
         db.session.commit()
 
-        self.user1_BAH = make_basic_auth_headers(self.user1.username,
-                                                 self.password)
-        response = self.client.post(url_for('api.auth_login'),
-                                    headers=self.user1_BAH)
+        self.user1_BAH = make_basic_auth_headers(self.user1.username, self.password)
+        response = self.client.post(url_for('api.auth_login'), headers=self.user1_BAH)
         self.user1_at = json.loads(response.data)['access_token']
         self.user1_TAH = make_token_auth_headers(self.user1_at)
 
@@ -46,14 +41,11 @@ class AuthAPITestCase(unittest.TestCase):
 
     def test_login(self):
         now = datetime.utcnow()
-        response = self.client.post(url_for('api.auth_login'),
-                                    headers=self.user1_BAH)
+        response = self.client.post(url_for('api.auth_login'), headers=self.user1_BAH)
         data = json.loads(response.data)
         self.assertIn('access_token', data)
         payload = decode_token(data['access_token'])
-
-        session = Session.query.filter_by(
-            token=payload['session_token']).first()
+        session = Session.query.filter_by(token=payload['session_token']).first()
         self.assertIsNotNone(session)
 
         revoke_status = current_app.redis.get(session.token)
@@ -73,8 +65,7 @@ class AuthAPITestCase(unittest.TestCase):
         at_expiration = datetime.utcfromtimestamp(payload['exp'])
         at_delta = at_expiration - now
 
-        self.assertEqual(session_delta.days,
-                         Config.JWT_SESSION_EXPIRES.days)
+        self.assertEqual(session_delta.days, Config.JWT_SESSION_EXPIRES.days)
         self.assertGreater(Config.JWT_ACCESS_TOKEN_EXPIRES, at_delta)
         self.assertEqual(session.token, payload['session_token'])
         self.assertEqual(session.expired_at, session_exp)
@@ -87,11 +78,9 @@ class AuthAPITestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_logout(self):
-        response = self.client.delete(url_for('api.auth_logout'),
-                                      headers=self.user1_TAH)
+        response = self.client.delete(url_for('api.auth_logout'), headers=self.user1_TAH)
         payload = decode_token(self.user1_at)
-        session = Session.query.filter_by(
-            token=payload['session_token']).first()
+        session = Session.query.filter_by(token=payload['session_token']).first()
         self.assertIsNone(session)
         revoke_status = current_app.redis.get(payload['session_token'])
         self.assertIsNotNone(revoke_status)
