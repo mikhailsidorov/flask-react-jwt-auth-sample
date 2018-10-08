@@ -58,15 +58,15 @@ def delete_all_sessions(user_id):
     db.session.commit()
 
 
-def create_session(now=None, expires_delta=None):
+def create_session(now=None, expires_delta=None, user_id=None):
+    user_id = user_id if user_id else g.current_user_id
     now = datetime.utcnow() if not now else now
-    if not expires_delta:
-        expires_delta = current_app.config['JWT_SESSION_EXPIRES']
+    expires_delta = expires_delta if expires_delta else current_app.config['JWT_SESSION_EXPIRES']
     token = token_urlsafe(32)
     session_exp = now + expires_delta
     user_agent = request.headers.get('User-Agent')
-    os = UserAgent(user_agent).platform
-    session = Session(user_id=g.current_user_id, ip=request.remote_addr, os=os,
+    os = UserAgent(user_agent).platform if user_agent else ''
+    session = Session(user_id=user_id, ip=request.remote_addr, os=os,
                       user_agent=request.headers.get('User-Agent'),
                       token=token, expired_at=session_exp, created_at=now,
                       updated_at=now)
@@ -78,7 +78,7 @@ def create_session(now=None, expires_delta=None):
 
 def make_payload(session):
     payload = {
-        'user_id': g.current_user_id,
+        'user_id': session.user_id,
         'session_token': session.token,
         'session_exp': session.expired_at.timestamp(),
         'ip': session.ip,
@@ -149,3 +149,16 @@ def jwt_required(fn):
         return fn(*args, **kwargs)
 
     return wrapper
+
+
+def login(now=None, user_id=None):
+    now = datetime.utcnow() if not now else now
+    user_id = user_id if user_id else g.current_user_id
+    at_expiration = now + current_app.config['JWT_ACCESS_TOKEN_EXPIRES']
+    at = create_access_token(make_payload(create_session(now=now, user_id=user_id)))
+    token_data = {
+        'access_token': at,
+        'at_expiration': at_expiration.isoformat()+'Z',
+        'user_id': user_id
+    }
+    return token_data

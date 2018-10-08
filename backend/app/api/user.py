@@ -6,7 +6,7 @@ from app import db
 from app.models import User
 from app.schemas import user_schema, users_schema
 from .errors import exceptions
-from .jwt_auth_helper import jwt_required, delete_all_sessions
+from .jwt_auth_helper import jwt_required, delete_all_sessions, login
 from .permissions import allows, CanUpdateProfile, CanDeleteProfile
 
 
@@ -68,8 +68,12 @@ class UserList(Resource):
         user = User(**data)
         db.session.add(user)
         db.session.commit()
-        response = jsonify(user_schema.dump(user))
+
+        payload = {
+            'token': login(user_id=user.id),
+            'user': user_schema.dump(user)
+        }
+        response = jsonify(payload)
         response.status_code = 201
-        response.headers['Location'] = url_for('api.user_detail',
-                                               user_id=user.id)
+        response.headers['Location'] = url_for('api.user_detail', user_id=user.id)
         return response
