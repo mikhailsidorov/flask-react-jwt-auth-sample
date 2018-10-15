@@ -1,11 +1,11 @@
 import React, { Fragment } from 'react'
-import AppNavbar from '../AppNavbar/AppNavbar'
+import AppNavbar from '../Navigation/AppNavbar/AppNavbar'
 
 const appLayout = props => {
   return (
     <Fragment>
       <AppNavbar />
-      <main>Main</main>
+      <main>{props.children}</main>
     </Fragment>
   )
 }

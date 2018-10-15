@@ -1,12 +1,13 @@
 import React from 'react'
-import { Button, Container, Col, Input, Form, FormGroup, Label, Row } from 'reactstrap'
+import { Button, Container, Col, Input, Form, FormGroup, Label } from 'reactstrap'
+import styles from './AppSignIn.module.css'
 
 const appSignInForm = props => {
   return (
     <Container>
-      <Row>
-        <Col xs="12" sm="12" md={{ size: 8, offset: 2 }} lg={{ size: 8, offset: 2 }}>
-          <Form>
+      <Col sm={{ size: 8, offset: 2 }} md={{ size: 6, offset: 3 }} lg={{ size: 6, offset: 3 }}>
+        <div className={styles.formBox + ' d-flex flex-column'}>
+          <Form className="mt-auto mb-auto">
             <FormGroup>
               <Label for="email">Email address</Label>
               <Input type="email" id="email" placeholder="Enter email" autoComplete="email" />
@@ -17,8 +18,8 @@ const appSignInForm = props => {
             </FormGroup>
             <Button color="primary">Login</Button>
           </Form>
-        </Col>
-      </Row>
+        </div>
+      </Col>
     </Container>
   )
 }

@@ -1,12 +1,12 @@
 import React from 'react'
 import { Nav, NavItem } from 'reactstrap'
-import AppNavLink from '../AppNavLink/AppNavLink'
+import AppNavLink from '../../AppNavLink/AppNavLink'
 
 const navBarItems = props => {
   return (
     <Nav>
       <NavItem>
-        <AppNavLink to="/profile">Profile</AppNavLink>
+        <AppNavLink to="/user/1/profile">Profile</AppNavLink>
       </NavItem>
       <NavItem>
         <AppNavLink to="/auth/logout">Logout</AppNavLink>
