@@ -10,15 +10,18 @@ services:
     command: ['sh', '../init/wait-for-db.sh', 'postgres-db', 'gunicorn', 'backend:app', '-w', '2', '-b', ':8000']
     expose:
       - '8000'
+    ports: 
+      - "8000:8000"
     links:
       - postgres-db:postgres-db
       - redis-revoked-store:redis-revoked-store
     environment:
-      - ENV_TYPE=PROD
+      - ENV_TYPE=${ENV_TYPE}
       - SECRET_KEY=${SECRET_KEY}
       - REDIS_URL=${REDIS_URL}
       - LOG_TO_STDOUT=${LOG_TO_STDOUT}
       - DATABASE_URL=postgresql+psycopg2://${DB_USER}:${DB_PASS}@${DB_SERVICE}:5432/${DB_NAME}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
     volumes:
       - ../backend/:/app/backend
     depends_on:
@@ -60,7 +63,7 @@ services:
       - redis-revoked-store:redis-revoked-store
     environment:
       - FLASK_APP=${FLASK_APP}
-      - ENV_TYPE=PROD
+      - ENV_TYPE=${ENV_TYPE}
       - SECRET_KEY=${SECRET_KEY}
       - REDIS_URL=${REDIS_URL}
       - LOG_TO_STDOUT=${LOG_TO_STDOUT}

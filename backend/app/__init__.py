@@ -1,6 +1,7 @@
 import logging
 
 from flask import Flask
+from flask_cors import CORS
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
@@ -26,6 +27,7 @@ def create_app(config_class=Config):
     login.init_app(app)
     mail.init_app(app)
     app.redis = Redis.from_url(app.config['REDIS_URL'])
+    cors = CORS(app, resources={r"/api/*": {"origins": app.config['ALLOWED_ORIGINS']}})
 
     from app.api import bp as api_bp
     app.register_blueprint(api_bp, url_prefix='/api')
