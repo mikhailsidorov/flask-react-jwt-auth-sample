@@ -1,5 +1,6 @@
 Flask==1.0.2
 flask-allows==0.7.0
+flask-cors==3.0.6
 Flask-HTTPAuth==3.2.4
 Flask-Login==0.4.1
 Flask-Mail==0.9.1
