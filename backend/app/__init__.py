@@ -11,7 +11,7 @@ from .config import Config
 
 
 db = SQLAlchemy()
-migrate = Migrate()
+migrate = Migrate(compare_type=True)
 login = LoginManager()
 login.login_view = 'auth.login'
 mail = Mail()
