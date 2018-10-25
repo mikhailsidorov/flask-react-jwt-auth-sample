@@ -38,7 +38,7 @@ class Session(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     ip = db.Column(db.String(40))
     os = db.Column(db.String(50))
-    user_agent = db.Column(db.String(100))
+    user_agent = db.Column(db.String(200))
     token = db.Column(db.String(100), index=True, unique=True)
     expired_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime)
