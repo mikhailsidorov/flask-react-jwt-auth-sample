@@ -4,7 +4,7 @@ from secrets import token_urlsafe
 
 import jwt
 from flask import abort, current_app, request, g
-from werkzeug import UserAgent
+from werkzeug.useragents import UserAgent
 from sqlalchemy.orm.exc import NoResultFound
 
 from app import db
