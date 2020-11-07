@@ -27,10 +27,9 @@ class ErrorHandlerTestCase(TestCase):
         data = json.loads(response.data)
         self.assertEqual(response.status_code, self.error.status_code)
         self.assertEqual(data['message'], self.error.description)
-        self.assertEqual(
-            data['error'], HTTP_STATUS_CODES[self.error.status_code])
+        self.assertEqual(data['error'], HTTP_STATUS_CODES[self.error.status_code])
 
-        self.error.status_code = 511
+        self.error.status_code = 599
         response = error_response(self.error)
         data = json.loads(response.data)
         self.assertEqual(data['error'], 'Unknown error')
