@@ -20,8 +20,11 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - REDIS_URL=${REDIS_URL}
       - LOG_TO_STDOUT=${LOG_TO_STDOUT}
-      - DATABASE_URL=postgresql+psycopg2://${DB_USER}:${DB_PASS}@${DB_SERVICE}:5432/${DB_NAME}
+      - DATABASE_URL=postgresql+psycopg2://${DB_USER}:${DB_PASS}@${DB_HOST}:5432/${DB_NAME}
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - DB_HOST=${DB_HOST}
+      - DB_ROOT=${DB_ROOT}
+      - DB_ROOT_PASS=${DB_ROOT_PASS}
     volumes:
       - ../backend/:/app/backend
     depends_on:
@@ -43,7 +46,7 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - REDIS_URL=${REDIS_URL}
       - LOG_TO_STDOUT=${LOG_TO_STDOUT}
-      - DATABASE_URL=postgresql+psycopg2://${DB_USER_TESTING}:${DB_PASS_TESTING}@${DB_SERVICE_TESTING}:5432/${DB_NAME_TESTING}
+      - DATABASE_URL=postgresql+psycopg2://${DB_USER_TESTING}:${DB_PASS_TESTING}@${DB_HOST_TESTING}:5432/${DB_NAME_TESTING}
     volumes:
       - ../backend/:/app/backend
     working_dir: /app/backend
@@ -67,7 +70,7 @@ services:
       - SECRET_KEY=${SECRET_KEY}
       - REDIS_URL=${REDIS_URL}
       - LOG_TO_STDOUT=${LOG_TO_STDOUT}
-      - DATABASE_URL=postgresql+psycopg2://${DB_USER}:${DB_PASS}@${DB_SERVICE}:5432/${DB_NAME}
+      - DATABASE_URL=postgresql+psycopg2://${DB_USER}:${DB_PASS}@${DB_HOST}:5432/${DB_NAME}
     volumes:
       - ../backend/:/app/backend
     working_dir: /app/backend
@@ -79,18 +82,22 @@ services:
   redis-revoked-store:
     container_name: 'redis-revoked-store'
     restart: always
-    image: redis:latest
+    image: redis:6.0.9
     ports:
       - 6379:6379
 
   postgres-db:
     container_name: 'postgres-db'
     restart: always
-    image: postgres:latest
+    build:
+      context: .
+      dockerfile: ./postgres-db/Dockerfile
     volumes:
-      - ./postgres-db/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d/
       - db:/var/lib/postgresql
+
     environment:
+      - POSTGRES_USER=${DB_ROOT}
+      - POSTGRES_PASSWORD=${DB_ROOT_PASS}
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASS=${DB_PASS}
