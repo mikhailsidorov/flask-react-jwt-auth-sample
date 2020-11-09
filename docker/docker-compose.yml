@@ -30,6 +30,25 @@ services:
     depends_on:
       - redis-revoked-store
       - postgres-db
+
+  frontend:
+    container_name: 'frontend'
+    restart: always
+    build: 
+      context: ../
+      dockerfile: ./docker/frontend/Dockerfile
+    command: ['npm', 'start']
+    expose: 
+      - '3000'
+    ports:
+      - "3000:3000"
+    links:
+      - backend:backend
+    volumes:
+      - ../frontend:/app/frontend
+    depends_on:
+      - backend
+  
   
   app-testing:
     container_name: "app-testing"
